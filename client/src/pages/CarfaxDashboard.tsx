@@ -1,4 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Search, Upload, History, LogOut, Settings, Loader2 } from "lucide-react";
+import { Search, Upload, History, LogOut, Settings, Loader2, Download, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function CarfaxDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -19,6 +20,10 @@ export default function CarfaxDashboard() {
   const [singleVin, setSingleVin] = useState("");
   const [bulkVins, setBulkVins] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchVin, setSearchVin] = useState("");
+  const [report, setReport] = useState<any>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
   const utils = trpc.useUtils();
   const { data: submissions, isLoading: submissionsLoading } = trpc.vin.getMySubmissions.useQuery();
@@ -70,6 +75,49 @@ export default function CarfaxDashboard() {
     }
   };
 
+  const handleInstantSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchVin || searchVin.length !== 17) {
+      setSearchError('VIN must be exactly 17 characters');
+      return;
+    }
+    setSearchLoading(true);
+    setSearchError('');
+    setReport(null);
+    try {
+      const response = await fetch(`/report/${searchVin.toUpperCase()}`);
+      if (!response.ok) throw new Error('Failed to fetch report');
+      const data = await response.json();
+      if (data.success && data.report) {
+        setReport(data.report);
+      } else {
+        setSearchError('Could not retrieve report');
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!report) return;
+    const link = document.createElement('a');
+    link.href = `/pdf/${report.vin}`;
+    link.download = `carfax-report-${report.vin}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const parseJSON = (jsonString: string) => {
+    try {
+      return JSON.parse(jsonString);
+    } catch {
+      return [];
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     setLocation("/");
@@ -98,9 +146,8 @@ export default function CarfaxDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-white shadow-sm">
-        <div className="container py-4 flex items-center justify-between">
+      <header className="border-b bg-white">
+        <div className="container flex justify-between items-center py-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
               <Search className="w-5 h-5 text-white" />
@@ -118,22 +165,146 @@ export default function CarfaxDashboard() {
       </header>
 
       <div className="container py-8">
-        <Tabs defaultValue="search" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="search" className="flex items-center gap-2">
-              <Search className="w-4 h-4" />
-              Search VINs
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="w-4 h-4" />
-              History
-            </TabsTrigger>
+        <Tabs defaultValue="instant" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="instant">Instant Search</TabsTrigger>
+            <TabsTrigger value="submit">Submit VINs</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          {/* Search Tab */}
-          <TabsContent value="search" className="space-y-6">
+          {/* Instant Search Tab */}
+          <TabsContent value="instant" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Search VINs</CardTitle>
+                <CardDescription>Get instant Carfax reports</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleInstantSearch} className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Enter 17-character VIN"
+                      value={searchVin}
+                      onChange={(e) => setSearchVin(e.target.value.toUpperCase())}
+                      maxLength={17}
+                      className="flex-1 font-mono"
+                    />
+                    <Button type="submit" disabled={searchLoading} className="gap-2">
+                      {searchLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4" />
+                          Search
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Character count: {searchVin.length}/17
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+
+            {searchError && (
+              <Card className="border-destructive bg-destructive/5">
+                <CardContent className="pt-6 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-destructive">Error</p>
+                    <p className="text-sm text-destructive/80">{searchError}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {report && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="bg-primary/5">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-2xl">
+                          {report.year} {report.make} {report.model}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1 font-mono">VIN: {report.vin}</p>
+                      </div>
+                      <Button onClick={handleDownloadPDF} className="gap-2">
+                        <Download className="w-4 h-4" />
+                        Download PDF
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-4">Vehicle Details</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Trim</p>
+                            <p className="font-medium">{report.trim}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Color</p>
+                            <p className="font-medium">{report.color}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Engine</p>
+                            <p className="font-medium">{report.engineType}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Transmission</p>
+                            <p className="font-medium">{report.transmission}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-4">Condition & Value</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Mileage</p>
+                            <p className="font-medium">{report.mileage.toLocaleString()} miles</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Estimated Value</p>
+                            <p className="font-medium">${report.price.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Owners</p>
+                            <p className="font-medium">{report.ownerCount}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Accidents</p>
+                            <p className={`font-medium ${report.accidentCount === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                              {report.accidentCount}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {!report && !searchLoading && !searchError && (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Enter a VIN to search for vehicle reports</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Submit VINs Tab */}
+          <TabsContent value="submit" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Single VIN Card */}
               <Card className="border-2">
                 <CardHeader>
                   <CardTitle className="text-lg">Single VIN Search</CardTitle>
@@ -176,7 +347,6 @@ export default function CarfaxDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Bulk VINs Card */}
               <Card className="border-2">
                 <CardHeader>
                   <CardTitle className="text-lg">Bulk VIN Search</CardTitle>
@@ -192,7 +362,7 @@ export default function CarfaxDashboard() {
                       placeholder="1HGBH41JXMN109186&#10;2HGBH41JXMN109187&#10;3HGBH41JXMN109188"
                       value={bulkVins}
                       onChange={(e) => setBulkVins(e.target.value)}
-                      className="font-mono text-sm h-32"
+                      className="font-mono text-sm min-h-[120px]"
                     />
                   </div>
                   <Button
@@ -218,56 +388,38 @@ export default function CarfaxDashboard() {
           </TabsContent>
 
           {/* History Tab */}
-          <TabsContent value="history">
+          <TabsContent value="history" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Search History</CardTitle>
-                <CardDescription>Your recent VIN searches and reports</CardDescription>
+                <CardTitle>Submission History</CardTitle>
+                <CardDescription>Your recent VIN submissions</CardDescription>
               </CardHeader>
               <CardContent>
                 {submissionsLoading ? (
-                  <div className="flex items-center justify-center py-8">
+                  <div className="flex justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 ) : submissions && submissions.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-b-2">
-                          <TableHead className="font-bold">VIN</TableHead>
-                          <TableHead className="font-bold">Status</TableHead>
-                          <TableHead className="font-bold">Submitted</TableHead>
-                          <TableHead className="font-bold">Completed</TableHead>
-                          <TableHead className="font-bold">Actions</TableHead>
+                        <TableRow>
+                          <TableHead>VIN</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Submitted</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {submissions?.map((submission: any) => (
-                          <TableRow key={submission.id} className="hover:bg-muted/50">
-                            <TableCell className="font-mono font-semibold">{submission.vin}</TableCell>
+                        {submissions.map((submission: any) => (
+                          <TableRow key={submission.id}>
+                            <TableCell className="font-mono text-sm">{submission.vin}</TableCell>
                             <TableCell>
-                              <Badge className={`${getStatusColor(submission.status)} border-0`}>
-                                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                              <Badge className={getStatusColor(submission.status)}>
+                                {submission.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {new Date(submission.submittedAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {submission.completedAt
-                                ? new Date(submission.completedAt).toLocaleDateString()
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {submission.status === "completed" ? (
-                                <Link href={`/report/${submission.id}`}>
-                                  <Button variant="outline" size="sm">
-                                    View Report
-                                  </Button>
-                                </Link>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">Pending</span>
-                              )}
+                              {new Date(submission.createdAt).toLocaleDateString()}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -275,9 +427,7 @@ export default function CarfaxDashboard() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No search history yet. Start by searching for a VIN.</p>
-                  </div>
+                  <p className="text-center text-muted-foreground py-8">No submissions yet</p>
                 )}
               </CardContent>
             </Card>
