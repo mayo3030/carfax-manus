@@ -23,6 +23,7 @@ import {
   updateSessionCookie,
   getValidSessionCookie,
 } from "./sessionDb";
+import { getApifyClient } from "./apify-client";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -220,6 +221,30 @@ export const appRouter = router({
     getSessionCookie: protectedProcedure.query(async ({ ctx }) => {
       const cookie = await getValidSessionCookie(ctx.user.id);
       return { cookie, hasValidSession: !!cookie };
+    }),
+  }),
+
+  // Apify integration for scraping
+  apify: router({
+    // Test Apify connection
+    testConnection: publicProcedure.query(async () => {
+      try {
+        const apifyClient = getApifyClient();
+        const accountInfo = await apifyClient.getAccountInfo();
+        return {
+          success: true,
+          userId: accountInfo.id,
+          email: accountInfo.email,
+          message: "Apify connection successful",
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
     }),
   }),
 
