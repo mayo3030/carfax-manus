@@ -143,3 +143,16 @@
 - [x] Test instant search with real VINs
 - [x] Test PDF export functionality
 - [x] Verify all report data displays correctly
+
+
+## Phase 10: Real Carfax Scraping with Apify
+- [x] Create Apify Actor code for Carfax scraping
+- [x] Create carfax-scraper.ts integration module
+- [x] Add tRPC carfax router with scrapeVin procedure
+- [x] Create Apify setup guide
+- [ ] Deploy Actor to Apify Cloud
+- [ ] Get Actor ID from Apify
+- [ ] Set APIFY_ACTOR_ID environment variable
+- [ ] Test scraping with real VINs
+- [ ] Integrate with dashboard search
+- [ ] Verify real data displays correctly
