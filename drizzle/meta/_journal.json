@@ -15,6 +15,13 @@
       "when": 1766904007615,
       "tag": "0001_handy_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1766933874000,
+      "tag": "0002_slow_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

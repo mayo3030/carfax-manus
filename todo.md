@@ -47,3 +47,34 @@
 - [x] Test export functionality
 - [x] Create n8n workflow setup guide
 - [x] Create user documentation
+
+
+## Phase 2: Carfax Branding & Design Redesign
+- [x] Redesign dashboard UI to match Carfax professional aesthetic
+- [x] Update color scheme to match Carfax branding
+- [x] Add Carfax logo and branding elements
+- [x] Improve VIN submission form styling
+- [x] Update dashboard header and navigation
+
+## Phase 3: Carfax-Style Report Pages
+- [ ] Create report pages that match Carfax report layout
+- [ ] Add all Carfax report sections (vehicle info, history, etc.)
+- [ ] Implement Carfax-style charts and visualizations
+- [ ] Add accident history section with Carfax styling
+- [ ] Add service history section with Carfax styling
+- [ ] Add ownership history section with Carfax styling
+- [ ] Add vehicle specifications section
+
+## Phase 4: Session Management System
+- [ ] Create secure credential storage for Carfax login
+- [ ] Implement cookie storage and retrieval system
+- [ ] Create session persistence mechanism
+- [ ] Add automatic login without re-entering credentials
+- [ ] Implement session expiration and refresh logic
+
+## Phase 5: n8n Workflow Updates
+- [ ] Update workflow for on-demand scraping (manual trigger)
+- [ ] Integrate session management with workflow
+- [ ] Use stored credentials for automatic login
+- [ ] Implement cookie-based session reuse
+- [ ] Add error handling for session expiration

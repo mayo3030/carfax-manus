@@ -6,6 +6,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import CarfaxDashboard from "./pages/CarfaxDashboard";
+import CarfaxReport from "./pages/CarfaxReport";
 import ReportDetail from "./pages/ReportDetail";
 import Admin from "./pages/Admin";
 
@@ -14,8 +16,8 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/dashboard"} component={Dashboard} />
-      <Route path={"/report/:id"} component={ReportDetail} />
+      <Route path={"/dashboard"} component={CarfaxDashboard} />
+      <Route path={"/report/:id"} component={CarfaxReport} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

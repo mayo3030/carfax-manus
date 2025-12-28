@@ -17,6 +17,12 @@ import {
   setAdminSetting,
   updateVinSubmissionStatus,
 } from "./db";
+import {
+  storeCarfaxCredentials,
+  getCarfaxCredentials,
+  updateSessionCookie,
+  getValidSessionCookie,
+} from "./sessionDb";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -185,6 +191,36 @@ export const appRouter = router({
           filename: `carfax_${report.vin}_${Date.now()}.csv`,
         };
       }),
+  }),
+
+  // Session management for Carfax credentials
+  session: router({
+    storeCredentials: protectedProcedure
+      .input(z.object({ username: z.string(), password: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        await storeCarfaxCredentials(ctx.user.id, input.username, input.password);
+        return { success: true };
+      }),
+
+    getCredentials: protectedProcedure.query(async ({ ctx }) => {
+      const creds = await getCarfaxCredentials(ctx.user.id);
+      if (!creds) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No credentials stored" });
+      }
+      return creds;
+    }),
+
+    updateCookie: publicProcedure
+      .input(z.object({ userId: z.number(), cookie: z.string(), expiresAt: z.string() }))
+      .mutation(async ({ input }) => {
+        await updateSessionCookie(input.userId, input.cookie, new Date(input.expiresAt));
+        return { success: true };
+      }),
+
+    getSessionCookie: protectedProcedure.query(async ({ ctx }) => {
+      const cookie = await getValidSessionCookie(ctx.user.id);
+      return { cookie, hasValidSession: !!cookie };
+    }),
   }),
 
   // Webhook endpoint for n8n to update submission status

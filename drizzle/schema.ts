@@ -25,8 +25,26 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+export const carfaxSessions = mysqlTable("carfax_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  encryptedUsername: text("encryptedUsername").notNull(),
+  encryptedPassword: text("encryptedPassword").notNull(),
+  sessionCookie: text("sessionCookie"),
+  lastLoginAt: timestamp("lastLoginAt").defaultNow(),
+  expiresAt: timestamp("expiresAt"),
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CarfaxSession = typeof carfaxSessions.$inferSelect;
+export type InsertCarfaxSession = typeof carfaxSessions.$inferInsert;
+
 /**
- * VIN submissions table - tracks all VIN requests from users
+ * VIN Submissions table - tracks all VIN requests from users
  */
 export const vinSubmissions = mysqlTable("vin_submissions", {
   id: int("id").autoincrement().primaryKey(),
