@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carfax Reports Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .report { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .header { background: #2563eb; color: white; padding: 10px; margin: -15px -15px 10px -15px; border-radius: 5px 5px 0 0; }
+        .field { margin: 8px 0; }
+        .label { font-weight: bold; color: #333; }
+        .value { color: #666; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>🚗 Carfax Reports Test</h1>
+    <p>Testing if real vehicle reports are accessible from the database...</p>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/trpc';
+        const VINS = ['3KPF24AD6KE105424', '2T1BURHE6KC161298'];
+
+        async function testReports() {
+            const resultsDiv = document.getElementById('results');
+            
+            for (const vin of VINS) {
+                try {
+                    // Try to fetch report
+                    const response = await fetch(`${API_BASE}/reports.getByVin?vin=${vin}`);
+                    const data = await response.json();
+                    
+                    if (data.result && data.result.data) {
+                        const report = data.result.data;
+                        resultsDiv.innerHTML += `
+                            <div class="report">
+                                <div class="header">${report.year} ${report.make} ${report.model}</div>
+                                <div class="field">
+                                    <span class="label">VIN:</span>
+                                    <span class="value">${report.vin}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Trim:</span>
+                                    <span class="value">${report.trim}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Mileage:</span>
+                                    <span class="value">${report.mileage?.toLocaleString()} miles</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Price:</span>
+                                    <span class="value">$${report.price?.toLocaleString()}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Color:</span>
+                                    <span class="value">${report.color}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Engine:</span>
+                                    <span class="value">${report.engineType}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Transmission:</span>
+                                    <span class="value">${report.transmission}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Accidents:</span>
+                                    <span class="value">${report.accidentCount}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Owners:</span>
+                                    <span class="value">${report.ownerCount}</span>
+                                </div>
+                                <div class="field">
+                                    <span class="label">Service Records:</span>
+                                    <span class="value">${report.serviceRecordCount}</span>
+                                </div>
+                                <p class="success">✅ Report found in database!</p>
+                            </div>
+                        `;
+                    } else if (data.error) {
+                        resultsDiv.innerHTML += `
+                            <div class="report">
+                                <p class="error">❌ Error for VIN ${vin}: ${data.error.json?.message || 'Unknown error'}</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML += `
+                        <div class="report">
+                            <p class="error">❌ Failed to fetch VIN ${vin}: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Run test
+        testReports();
+    </script>
+</body>
+</html>

@@ -121,3 +121,17 @@
 - [ ] Monitor first 24 hours
 - [ ] Gather user feedback
 - [ ] Optimize based on feedback
+
+
+## Phase 9: End-to-End Testing with Real Data
+- [ ] Deploy Apify Actor to Apify Cloud
+- [ ] Get Apify Actor ID
+- [ ] Test Apify Actor with real VINs
+- [ ] Create test webhook endpoint for n8n simulation
+- [ ] Submit real VIN through dashboard
+- [ ] Verify scraping completes successfully
+- [ ] Check database for saved report data
+- [ ] Verify report displays in dashboard
+- [ ] Test report export (JSON, CSV)
+- [ ] Test bulk VIN submission
+- [ ] Verify monitoring dashboard metrics
