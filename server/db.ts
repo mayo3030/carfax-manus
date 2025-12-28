@@ -225,3 +225,59 @@ export async function getAllAdminSettings() {
   
   return db.select().from(adminSettings);
 }
+
+
+// Save scraped vehicle data from Carfax
+export async function saveScrapedVehicleData(data: {
+  vinSubmissionId: number;
+  vin: string;
+  year?: number | null;
+  make?: string;
+  model?: string;
+  trim?: string;
+  color?: string;
+  transmission?: string;
+  engineType?: string;
+  mileage?: number | null;
+  accidentCount?: number;
+  ownerCount?: number;
+  serviceRecordCount?: number;
+  price?: number | null;
+  accidentHistory?: string;
+  serviceHistory?: string;
+  ownershipHistory?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Create vehicle report
+    await db.insert(vehicleReports).values({
+      vinSubmissionId: data.vinSubmissionId,
+      vin: data.vin,
+      year: data.year,
+      make: data.make,
+      model: data.model,
+      trim: data.trim,
+      color: data.color,
+      transmission: data.transmission,
+      engineType: data.engineType,
+      mileage: data.mileage,
+      accidentCount: data.accidentCount || 0,
+      ownerCount: data.ownerCount || 0,
+      serviceRecordCount: data.serviceRecordCount || 0,
+      price: data.price,
+      accidentHistory: data.accidentHistory,
+      serviceHistory: data.serviceHistory,
+      ownershipHistory: data.ownershipHistory,
+    });
+
+    // Update VIN submission status to completed
+    await updateVinSubmissionStatus(data.vinSubmissionId, "completed");
+    
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to save vehicle data:", error);
+    throw error;
+  }
+}
