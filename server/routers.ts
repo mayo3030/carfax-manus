@@ -24,6 +24,7 @@ import {
   getValidSessionCookie,
 } from "./sessionDb";
 import { getApifyClient } from "./apify-client";
+import { instantRouter } from "./routers/instant";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -247,6 +248,9 @@ export const appRouter = router({
       }
     }),
   }),
+
+  // Instant report generation (fast results)
+  instant: instantRouter,
 
   // Webhook endpoint for n8n to update submission status
   webhook: router({
