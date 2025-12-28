@@ -89,4 +89,139 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+import { adminSettings, InsertAdminSetting, InsertVehicleReport, InsertVinSubmission, vehicleReports, vinSubmissions } from "../drizzle/schema";
+import { and, desc } from "drizzle-orm";
+
+// VIN Submission queries
+export async function createVinSubmission(submission: InsertVinSubmission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(vinSubmissions).values(submission);
+  const id = Number(result[0]?.insertId || 0);
+  return { id };
+}
+
+export async function getVinSubmissionsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(vinSubmissions)
+    .where(eq(vinSubmissions.userId, userId))
+    .orderBy(desc(vinSubmissions.submittedAt));
+}
+
+export async function getVinSubmissionById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(vinSubmissions)
+    .where(eq(vinSubmissions.id, id))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function updateVinSubmissionStatus(
+  id: number,
+  status: "pending" | "processing" | "completed" | "failed",
+  errorMessage?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updates: any = { status };
+  if (status === "completed" || status === "failed") {
+    updates.completedAt = new Date();
+  }
+  if (errorMessage) {
+    updates.errorMessage = errorMessage;
+  }
+  
+  await db.update(vinSubmissions)
+    .set(updates)
+    .where(eq(vinSubmissions.id, id));
+}
+
+export async function getPendingVinSubmissions() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(vinSubmissions)
+    .where(eq(vinSubmissions.status, "pending"))
+    .orderBy(vinSubmissions.submittedAt);
+}
+
+// Vehicle Report queries
+export async function createVehicleReport(report: InsertVehicleReport) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(vehicleReports).values(report);
+  return result;
+}
+
+export async function getVehicleReportByVinSubmissionId(vinSubmissionId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(vehicleReports)
+    .where(eq(vehicleReports.vinSubmissionId, vinSubmissionId))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function getVehicleReportByVin(vin: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(vehicleReports)
+    .where(eq(vehicleReports.vin, vin))
+    .orderBy(desc(vehicleReports.scrapedAt))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function getAllVehicleReports(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    report: vehicleReports,
+    submission: vinSubmissions
+  })
+  .from(vehicleReports)
+  .leftJoin(vinSubmissions, eq(vehicleReports.vinSubmissionId, vinSubmissions.id))
+  .where(eq(vinSubmissions.userId, userId))
+  .orderBy(desc(vehicleReports.scrapedAt));
+}
+
+// Admin Settings queries
+export async function getAdminSetting(key: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(adminSettings)
+    .where(eq(adminSettings.settingKey, key))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function setAdminSetting(key: string, value: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(adminSettings)
+    .values({ settingKey: key, settingValue: value })
+    .onDuplicateKeyUpdate({ set: { settingValue: value, updatedAt: new Date() } });
+}
+
+export async function getAllAdminSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(adminSettings);
+}
