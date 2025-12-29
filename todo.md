@@ -150,6 +150,8 @@
 - [x] Create carfax-scraper.ts integration module
 - [x] Add tRPC carfax router with scrapeVin procedure
 - [x] Create Apify setup guide
+- [x] Fix Actor code to use PuppeteerCrawler instead of CheerioCrawler
+- [x] Create comprehensive Actor update guide
 - [ ] Deploy Actor to Apify Cloud
 - [ ] Get Actor ID from Apify
 - [ ] Set APIFY_ACTOR_ID environment variable
